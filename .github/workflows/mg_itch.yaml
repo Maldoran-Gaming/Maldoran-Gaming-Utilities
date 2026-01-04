@@ -47,16 +47,16 @@ on:
       ITCH_GAME:
         required: true
 
-  env:      
-    REPO_URL: "${{ inputs.REPO_URL }}"
-    WORKING_FOLDER: "C:\\temp\\${{ inputs.BUILD_FOLDER_NAME }}"
-    TEMP_PROJECT_PATH: "C:\\temp\\${{ inputs.BUILD_FOLDER_NAME }}\\Project"
-    PROJECT_PATH: "C:\\temp\\${{ inputs.BUILD_FOLDER_NAME }}\\Project\\Crylon"
-    BUILD_OUTPUT_PATH: "C:\\temp\\${{ inputs.BUILD_FOLDER_NAME }}\\Output-html"
-    UNITY_EDITOR_PATH: "C:\\Program Files\\Unity\\Hub\\Editor\\${{ inputs.UNITY_EDITOR_VERSION }}\\Editor\\Unity.exe"
-    BUILD_PROFILE_PATH: "Assets\\Settings\\Build Profiles\\${{ inputs.BUILD_PROFILE }}"
-    BUTLER_PATH: "C:\\temp\\${{ inputs.BUILD_FOLDER_NAME }}\\BUTLER"
-    BUTLER_URL: "https://broth.itch.zone/butler/windows-amd64/LATEST/archive/default"
+env:      
+  REPO_URL: "${{ inputs.REPO_URL }}"
+  WORKING_FOLDER: "C:\\temp\\${{ inputs.BUILD_FOLDER_NAME }}"
+  TEMP_PROJECT_PATH: "C:\\temp\\${{ inputs.BUILD_FOLDER_NAME }}\\Project"
+  PROJECT_PATH: "C:\\temp\\${{ inputs.BUILD_FOLDER_NAME }}\\Project\\Crylon"
+  BUILD_OUTPUT_PATH: "C:\\temp\\${{ inputs.BUILD_FOLDER_NAME }}\\Output-html"
+  UNITY_EDITOR_PATH: "C:\\Program Files\\Unity\\Hub\\Editor\\${{ inputs.UNITY_EDITOR_VERSION }}\\Editor\\Unity.exe"
+  BUILD_PROFILE_PATH: "Assets\\Settings\\Build Profiles\\${{ inputs.BUILD_PROFILE }}"
+  BUTLER_PATH: "C:\\temp\\${{ inputs.BUILD_FOLDER_NAME }}\\BUTLER"
+  BUTLER_URL: "https://broth.itch.zone/butler/windows-amd64/LATEST/archive/default"
 
 jobs:
   buildWithItchProfile:

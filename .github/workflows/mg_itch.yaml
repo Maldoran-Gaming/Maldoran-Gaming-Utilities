@@ -21,31 +21,48 @@
 # you will need to specify all of these variables at the repository level instead of the Organisation level. 
 
 name: Build and Deploy to Itch.io (Self-Hosted Windows Local)
-
-# Workflow triggers when the branch "itchBuild" is updated. Feel free to change this to suit your needs.
-# This is a self-hosted workflow, so it will only run on self-hosted runners.
 on:
-  push:
-    branches: [ "itchBuild" ]
-  pull_request:
-    branches: [ "itchBuild"]
-  workflow_dispatch:
+  workflow_call:
+    inputs:
+      REPO_URL:
+        required: true
+        type: string
+      BUILD_FOLDER_NAME:
+        required: true
+        type: string
+      BUILD_PROFILE:
+        required: true
+        type: string
+      UNITY_EDITOR_VERSION:
+        required: true
+        type: string
+      ITCH_CHANNEL:
+        required: true
+        type: string
+    secrets:
+      BUTLER_API_KEY:
+        required: true
+      ITCH_USER:
+        required: true
+      ITCH_GAME:
+        required: true
 
-env:
-  REPO_URL: "${{ vars.REPO_URL }}"
-  WORKING_FOLDER: "C:\\temp\\${{ vars.BUILD_FOLDER_NAME }}"
-  TEMP_PROJECT_PATH: "C:\\temp\\${{ vars.BUILD_FOLDER_NAME }}\\Project"
-  PROJECT_PATH: "C:\\temp\\${{ vars.BUILD_FOLDER_NAME }}\\Project\\Crylon"
-  BUILD_OUTPUT_PATH: "C:\\temp\\${{ vars.BUILD_FOLDER_NAME }}\\Output-html"
-  UNITY_EDITOR_PATH: "C:\\Program Files\\Unity\\Hub\\Editor\\${{ vars.UNITY_EDITOR_VERSION }}\\Editor\\Unity.exe"
-  BUILD_PROFILE_PATH: "Assets\\Settings\\Build Profiles\\${{ vars.BUILD_PROFILE }}"
-  BUTLER_PATH: "C:\\temp\\${{ vars.BUILD_FOLDER_NAME }}\\BUTLER"
-  BUTLER_URL: "https://broth.itch.zone/butler/windows-amd64/LATEST/archive/default"
+  env:      
+    REPO_URL: "${{ inputs.REPO_URL }}"
+    WORKING_FOLDER: "C:\\temp\\${{ inputs.BUILD_FOLDER_NAME }}"
+    TEMP_PROJECT_PATH: "C:\\temp\\${{ inputs.BUILD_FOLDER_NAME }}\\Project"
+    PROJECT_PATH: "C:\\temp\\${{ inputs.BUILD_FOLDER_NAME }}\\Project\\Crylon"
+    BUILD_OUTPUT_PATH: "C:\\temp\\${{ inputs.BUILD_FOLDER_NAME }}\\Output-html"
+    UNITY_EDITOR_PATH: "C:\\Program Files\\Unity\\Hub\\Editor\\${{ inputs.UNITY_EDITOR_VERSION }}\\Editor\\Unity.exe"
+    BUILD_PROFILE_PATH: "Assets\\Settings\\Build Profiles\\${{ inputs.BUILD_PROFILE }}"
+    BUTLER_PATH: "C:\\temp\\${{ inputs.BUILD_FOLDER_NAME }}\\BUTLER"
+    BUTLER_URL: "https://broth.itch.zone/butler/windows-amd64/LATEST/archive/default"
 
 jobs:
   buildWithItchProfile:
     name: Build using Itch.io Build Profile
     runs-on: self-hosted
+
     
     steps:
       # Ensure the working directory is clean before starting the build
@@ -53,20 +70,12 @@ jobs:
         run: |
           echo "=== Starting Workspace Cleanup ==="
           
-          if exist "%WORKING_FOLDER%" (
-            echo "Found existing folder, attempting to move and delete..."
-          
-            set "GARBAGE_PATH=%WORKING_FOLDER%_old_%RANDOM%"
-            move "%WORKING_FOLDER%" "!GARBAGE_PATH!" >nul 2>&1
-          
-            if exist "!GARBAGE_PATH!" (
-                rd /s /q "!GARBAGE_PATH!" || (
-                    echo "⚠️ Warning: Some files are locked in !GARBAGE_PATH!. They will be ignored."
+              if exist "%WORKING_FOLDER%" (
+                echo "Found existing folder, attempting to delete..."
+                rd /s /q "%WORKING_FOLDER%" || (
+                    echo "⚠️ Warning: Some files may be locked. Attempting to continue..."
                 )
-            ) else (
-                rd /s /q "%WORKING_FOLDER%"
-            )
-          )
+              )
           
           echo "Creating fresh directories..."
           mkdir "%TEMP_PROJECT_PATH%" || (echo "❌ Failed to create %TEMP_PROJECT_PATH%" && exit /b 1)
@@ -202,7 +211,6 @@ jobs:
     #Deploy to itch.io using Butler API
     runs-on: self-hosted
     needs: buildWithItchProfile
-    if: github.ref == 'refs/heads/itchBuild'
 
     steps:
       - name: Download Build Artifacts
@@ -260,11 +268,11 @@ jobs:
           echo "=== Deploying to Itch.io ==="
           echo "User: ${{ secrets.ITCH_USER }}"
           echo "Game: ${{ secrets.ITCH_GAME }}"
-          echo "Channel: ${{ vars.ITCH_CHANNEL }}"
+          echo "Channel: ${{ inputs.ITCH_CHANNEL }}"
           echo "Version: itchBuild-${{ github.run_number }}"
           echo "Package: build/"
           dir build/
-          "%BUTLER_PATH%/butler.exe" push build/ ${{ secrets.ITCH_USER }}/${{ secrets.ITCH_GAME }}:html --userversion itchBuild-${{ github.run_number }}
+          "%BUTLER_PATH%\butler.exe" push build/ ${{ secrets.ITCH_USER }}/${{ secrets.ITCH_GAME }}:${{ inputs.ITCH_CHANNEL }} --userversion itchBuild-${{ github.run_number }}          
           if %errorlevel% neq 0 (
                   echo "❌ Failed to upload to itch.io"
                   exit /b 1

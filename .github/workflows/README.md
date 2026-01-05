@@ -1,14 +1,4 @@
-
-
-                                      00      0        0       0         00000        000      00000         00       0                  000000       0        0      00        0      0     00000                                      
-                                     0000   00000    00000    000       000000000  000000000 000000000     00000     0000  0000       0000000000    00000    00000   0000 0000 0000   000 000000000                                     
-                                     00000 000000    000000   000       000   000 0000   000        000    000000    00000 0000       0000         0000000   000000 00000 0000 00000  000 000                                           
-                                     000000000000   000 000   000       000   000 0000   000 000000000    00000000   0000000000       0000000000   000 000   000000000000 0000 000000 000 000000000                                     
-                                     00 00000 000  000000000  000       000   000 0000   000 0000 0000   000000000   00 0000000       0000   000  000000000  000000000000 0000 000 000000 000    00                                     
-                                     00  0000 000 000000 0000 000000000 000000000 0000000000 0000  0000  00000  000  00  000000       0000000000 000000 000  000 0000 000 0000 000  00000 000000000                                     
-                                     00       00  000     00    000000   000000      00000    00    000  00      00  00    00           000000    00     00   00       00  00  00    000    000000                                      
-
-
+# MALDORAN GAMING
 
 # Unity Itch.io Deployment Workflow (Self-Hosted Windows)
 
@@ -36,17 +26,17 @@ The runner machine must have the Unity Editor installed at the standard path:
 
 ## Configuration
 
-Set up the following **Secrets** and **Variables** in your GitHub repository settings:
+This workflow is designed as a **reusable workflow**. When calling it from another action, you must provide the following **Inputs** and **Secrets**:
 
-### GitHub Secrets
+### Required Secrets
 | Secret | Description |
 | :--- | :--- |
 | `BUTLER_API_KEY` | Your Itch.io Butler API key ([Get it here](https://itch.io/docs/butler/login.html)) |
 | `ITCH_USER` | Your Itch.io username |
 | `ITCH_GAME` | Your Itch.io game slug (e.g., `my-awesome-game`) |
 
-### GitHub Variables
-| Variable | Description | Example |
+### Required Inputs
+| Input | Description | Example |
 | :--- | :--- | :--- |
 | `REPO_URL` | URL of the repository to clone | `https://github.com/org/repo.git` |
 | `BUILD_FOLDER_NAME` | Unique folder name for the build workspace | `my-project-itch` |
@@ -54,35 +44,28 @@ Set up the following **Secrets** and **Variables** in your GitHub repository set
 | `UNITY_EDITOR_VERSION` | Exact version installed on the runner | `6000.3.0f1` |
 | `ITCH_CHANNEL` | Target Itch.io channel | `html` |
 
-> [!NOTE]
-> If you are using a basic/free GitHub account with a **private** repository, ensure these are set at the **Repository** level rather than the Organization level.
-
 ---
 
 ## How It Works
 
 ### Workflow Triggers
-The workflow runs automatically when:
-- Code is pushed to the `itchBuild` branch.
-- A Pull Request is opened against the `itchBuild` branch.
-- Manually triggered via "Workflow Dispatch".
+This workflow is triggered via `workflow_call`. To use it, create a caller workflow in your repository (e.g., `.github/workflows/main.yml`):
 
-### Jobs
-1. **buildWithItchProfile**:
-    - Cleans the temporary workspace on the C: drive.
-    - Clones the repository recursively.
-    - Verifies the Unity project structure.
-    - Executes the Unity build using `-batchmode` and `-activeBuildProfile`.
-    - Uploads the resulting files as a GitHub artifact.
+```yaml
+name: Deploy To Itch Pipeline
 
-2. **deployToItch**:
-    - Downloads the build artifacts.
-    - Downloads and extracts the `butler` executable.
-    - Pushes the build to Itch.io using the `butler push` command with a version tag: `itchBuild-<run_number>`.
+on:
+  push:
+    branches: [ "itchBuild" ]
+  workflow_dispatch:
 
----
-
-## Troubleshooting
-- **Locked Files**: If the "Clean workspace" step fails, ensure no Unity Editor instances or file explorers are open in the `C:\temp\<BUILD_FOLDER_NAME>` directory on the runner.
-- **Unity Path**: Ensure the `UNITY_EDITOR_VERSION` variable matches the folder name exactly as it appears in `C:\Program Files\Unity\Hub\Editor\`.
-- **Build Failures**: Check the `build.log` file produced in the build output directory (also visible in the GitHub Actions console output).
+jobs:
+  call-itch-workflow:
+    uses: Maldoran-Gaming/Maldoran-Gaming-Utilities/.github/workflows/mg_itch.yaml@main
+    with:
+      REPO_URL: ${{ vars.REPO_URL }}
+      BUILD_FOLDER_NAME: ${{ vars.BUILD_FOLDER_NAME }}
+      BUILD_PROFILE: ${{ vars.BUILD_PROFILE }}
+      UNITY_EDITOR_VERSION: ${{ vars.UNITY_EDITOR_VERSION }}
+      ITCH_CHANNEL: ${{ vars.ITCH_CHANNEL }}
+    secrets: inherit
